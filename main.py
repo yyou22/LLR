@@ -11,7 +11,8 @@ import torchvision.models as models
 #from torchvision.models import resnet101, ResNet101_Weights
 import numpy as np
 
-from llr import locally_linearity_regularization
+#from llr import locally_linearity_regularization
+from llr_tf import locally_linearity_regularization
 from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
 
 #used batch=128 lr=0.001 for standard
@@ -129,32 +130,34 @@ def train(args, model, device, train_loader, optimizer, epoch):
         if args.loss == "standard":
             loss = F.cross_entropy(model(data), target)
         else:
-            if 'llr65' in args.loss:
-                lambd, mu = 6.0, 5.0
-            elif 'llr36' in args.loss:
-                #print('llr36')
-                lambd, mu = 3.0, 6.0
-            else:
+            #if 'llr65' in args.loss:
+                #lambd, mu = 6.0, 5.0
+            #elif 'llr36' in args.loss:
+                #lambd, mu = 3.0, 6.0
+            #else:
                 #lambd, mu = 4.0, 3.0
-                lambd, mu = 2.0, 4.0
+                #lambd, mu = 2.0, 4.0
 
-            if 'sllr' in args.loss:
-                version = "sum"
-            else:
-                version = None
+            #if 'sllr' in args.loss:
+                #version = "sum"
+            #else:
+                #version = None
 
-            epsilon = 0.031
+            #epsilon = 0.031
 
-            #loss_fn = get_loss('ce', reduction="sum")
-            loss_fn = nn.CrossEntropyLoss(reduction="sum")
+            #loss_fn = nn.CrossEntropyLoss(reduction="sum")
 
-            norm = np.inf
+            #norm = np.inf
             #norm = 2
 
-            outputs, loss = locally_linearity_regularization(
-                model, loss_fn, data, target, norm=norm, optimizer=optimizer,
-                step_size=epsilon/2, epsilon=epsilon, perturb_steps=2,
-                lambd=lambd, mu=mu, version=version
+            #outputs, loss = locally_linearity_regularization(
+                #model, loss_fn, data, target, norm=norm, optimizer=optimizer,
+                #step_size=epsilon/2, epsilon=epsilon, perturb_steps=2,
+                #lambd=lambd, mu=mu, version=version
+            #)
+
+            loss = locally_linearity_regularization(
+                model, data, target, epsilon=0.031, alpha=0.007, num_steps=10, lambda=4.0, mu=3.0, smoothing_factor=2.0
             )
 
         loss.backward()
