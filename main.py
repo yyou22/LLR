@@ -131,7 +131,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
             loss = F.cross_entropy(model(data), target)
         elif 'llr' in args.loss:
             if 'llr65' in args.loss:
-                #lambd, mu = 6.0, 5.0
+                lambd, mu = 6.0, 5.0
             elif 'llr36' in args.loss:
                 lambd, mu = 3.0, 6.0
             else:
@@ -156,7 +156,8 @@ def train(args, model, device, train_loader, optimizer, epoch):
                 lambd=lambd, mu=mu, version=version
             )
 
-       elif 'tulip' in args.loss:
+        elif 'tulip' in args.loss:
+
             if 'tulipem1' in args.loss:
                 lambd = 1e-1
             elif 'tulipem2' in args.loss:
@@ -174,8 +175,10 @@ def train(args, model, device, train_loader, optimizer, epoch):
                 step_size = 1e-3
             else:
                 step_size = 1e-0
+
+            loss_fn = nn.CrossEntropyLoss(reduction="none")
             
-            outputs, loss = tulip_loss(model, loss_fn, x, y,
+            outputs, loss = tulip_loss(model, loss_fn, data, target,
                     step_size=step_size, lambd=lambd)
 
         loss.backward()
