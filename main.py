@@ -9,11 +9,10 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 import torchvision.models as models
 #from torchvision.models import resnet101, ResNet101_Weights
+import numpy as np
 
-#from GTSRB import GTSRB_Test
-#from models.wideresnet import *
-#from models.resnet import *
-#from trades import trades_loss
+from llr import locally_linearity_regularization
+from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
@@ -46,6 +45,8 @@ parser.add_argument('--model-dir', default='./model-OCT-VGG',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
+parser.add_argument('--loss', default='llr',
+                    help='[standard | llr]')
 
 args = parser.parse_args()
 
@@ -57,30 +58,6 @@ use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 device = torch.device("cuda" if use_cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
-
-# setup data loader
-#transform_train = transforms.Compose([
-    #transforms.Resize((96, 96)),
-    #transforms.RandomCrop(32, padding=4),
-    #transforms.RandomRotation(15),
-    #transforms.ToTensor(),
-#])
-#transform_test = transforms.Compose([
-    #transforms.Resize((96, 96)),
-    #transforms.ToTensor(),
-#])
-
-#trainset = torchvision.datasets.ImageFolder(
-    #'/content/data/GTSRB-Train/Final_Training/Images/',
-    #transform = transform_train
-#)
-#testset = GTSRB_Test(
-    #root_dir='/content/data/GTSRB-Test/Final_Test/Images/',
-    #transform=transform_test
-#)
-
-#train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, **kwargs)
-#test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
 data_dir = '/content/data/OCT2017 '
 TRAIN = 'train'
@@ -148,15 +125,33 @@ def train(args, model, device, train_loader, optimizer, epoch):
         optimizer.zero_grad()
 
         # calculate robust loss
-        loss = F.cross_entropy(model(data), target)
-        #loss = trades_loss(model=model,
-                           #x_natural=data,
-                           #y=target,
-                           #optimizer=optimizer,
-                           #step_size=args.step_size,
-                           #epsilon=args.epsilon,
-                           #perturb_steps=args.num_steps,
-                           #beta=args.beta)
+        if args.loss == "standard":
+            loss = F.cross_entropy(model(data), target)
+        else:
+            if 'llr65' in args.loss:
+                lambd, mu = 6.0, 5.0
+            elif 'llr36' in args.loss:
+                lambd, mu = 3.0, 6.0
+            else:
+                lambd, mu = 4.0, 3.0
+
+            if 'sllr' in args.loss:
+                version = "sum"
+            else:
+                version = None
+
+            epsilon = 0.1
+
+            loss_fn = get_loss('ce', reduction="sum")
+
+            norm = np.inf
+
+            outputs, loss = locally_linearity_regularization(
+                model, loss_fn, x, y, norm=norm, optimizer=optimizer,
+                step_size=epsilon/2, epsilon=epsilon, perturb_steps=2,
+                lambd=lambd, mu=mu, version=version
+            )
+
         loss.backward()
         optimizer.step()
 
