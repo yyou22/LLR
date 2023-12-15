@@ -16,9 +16,9 @@ from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
 
 #used batch=128 lr=0.001 for standard
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
-parser.add_argument('--batch-size', type=int, default=32, metavar='N',
+parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--test-batch-size', type=int, default=32, metavar='N',
+parser.add_argument('--test-batch-size', type=int, default=64, metavar='N',
                     help='input batch size for testing (default: 128)')
 parser.add_argument('--epochs', type=int, default=20, metavar='N',
                     help='number of epochs to train')
@@ -132,20 +132,24 @@ def train(args, model, device, train_loader, optimizer, epoch):
             if 'llr65' in args.loss:
                 lambd, mu = 6.0, 5.0
             elif 'llr36' in args.loss:
+                #print('llr36')
                 lambd, mu = 3.0, 6.0
             else:
-                lambd, mu = 4.0, 3.0
+                #lambd, mu = 4.0, 3.0
+                lambd, mu = 2.0, 4.0
 
             if 'sllr' in args.loss:
                 version = "sum"
             else:
                 version = None
 
-            epsilon = 0.1
+            epsilon = 0.031
 
-            loss_fn = get_loss('ce', reduction="sum")
+            #loss_fn = get_loss('ce', reduction="sum")
+            loss_fn = nn.CrossEntropyLoss(reduction="sum")
 
             norm = np.inf
+            #norm = 2
 
             outputs, loss = locally_linearity_regularization(
                 model, loss_fn, data, target, norm=norm, optimizer=optimizer,
@@ -217,8 +221,8 @@ def adjust_learning_rate(optimizer, epoch):
 def main():
     # init model, ResNet101() can be also used here for training
     # model = resnet101(weights=ResNet101_Weights.DEFAULT)
-    #model = models.vgg16(pretrained=True)
-    model = models.vgg16()
+    model = models.vgg16(pretrained=True)
+    #model = models.vgg16()
     #model.fc = nn.Linear(2048, 43)
     model.classifier[6] = nn.Linear(4096, 4)
     model = model.to(device)

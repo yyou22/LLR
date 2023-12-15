@@ -16,11 +16,20 @@ def locally_linearity_regularization(model,
     def model_grad(x):
         x.requires_grad_(True)
         lx = loss_fn(model(x), y)
+        #print('model(x)', model(x))
+        #print('y', y)
+        #print('lx', lx)
+
         lx.backward()
-        ret = x.grad
+        ret = x.grad.clone()
+
+        #print("ret1:", ret)
+
         x.grad.zero_()
         x.requires_grad_(False)
-        print("Model gradient (mg):", ret)
+
+        #print("ret2:", ret)
+
         return ret
 
     def grad_dot(x, delta, model_grad):
@@ -34,11 +43,11 @@ def locally_linearity_regularization(model,
         return torch.abs(ret)
 
     mg = model_grad(x)
-    print("Initial model gradient (mg):", mg)
+    #print("Initial model gradient (mg):", mg)
 
     if norm in [2, np.inf]:
         delta = 0.001 * torch.randn(x.shape).cuda().detach()
-        print("Initial delta:", delta)
+        #print("Initial delta:", delta)
         delta = torch.autograd.Variable(delta.data, requires_grad=True)
 
         # Setup optimizers
@@ -82,6 +91,7 @@ def locally_linearity_regularization(model,
         grad_ = grad_dot(x, delta, mg)
         loss = loss_natural + lambd * g_ + mu * grad_
 
+    #print('loss_natural', loss_natural)
     #print('g(x, delta, mg)', g_)
     #print('grad_dot(x, delta, mg)', grad_)
 
