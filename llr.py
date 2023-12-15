@@ -6,6 +6,8 @@ import torch
 import numpy as np
 import torch.optim as optim
 
+import torch.nn.functional as F
+
 def locally_linearity_regularization(model,
                 loss_fn, x, y, norm, optimizer,
                 step_size, epsilon=0.031, perturb_steps=10,
@@ -84,6 +86,7 @@ def locally_linearity_regularization(model,
     # calculate robust loss
     outputs = model(x)
     loss_natural = loss_fn(outputs, y)
+    
     if version == "sum":
         loss = loss_natural + lambd * g(x, delta, mg) + mu * grad_dot(x, delta, mg) * len(x)
     else:

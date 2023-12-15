@@ -11,8 +11,8 @@ import torchvision.models as models
 #from torchvision.models import resnet101, ResNet101_Weights
 import numpy as np
 
-#from llr import locally_linearity_regularization
-from llr_tf import locally_linearity_regularization
+from llr import locally_linearity_regularization
+from tulip import tulip_loss
 from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
 
 #used batch=128 lr=0.001 for standard
@@ -47,8 +47,8 @@ parser.add_argument('--model-dir', default='./model-OCT-VGG',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--loss', default='llr',
-                    help='[standard | llr]')
+parser.add_argument('--loss', default='tulip',
+                    help='[standard | llr | tulip]')
 
 args = parser.parse_args()
 
@@ -129,36 +129,54 @@ def train(args, model, device, train_loader, optimizer, epoch):
         # calculate robust loss
         if args.loss == "standard":
             loss = F.cross_entropy(model(data), target)
-        else:
-            #if 'llr65' in args.loss:
+        elif 'llr' in args.loss:
+            if 'llr65' in args.loss:
                 #lambd, mu = 6.0, 5.0
-            #elif 'llr36' in args.loss:
-                #lambd, mu = 3.0, 6.0
-            #else:
+            elif 'llr36' in args.loss:
+                lambd, mu = 3.0, 6.0
+            else:
                 #lambd, mu = 4.0, 3.0
-                #lambd, mu = 2.0, 4.0
+                lambd, mu = 2.0, 4.0
 
-            #if 'sllr' in args.loss:
-                #version = "sum"
-            #else:
-                #version = None
+            if 'sllr' in args.loss:
+                version = "sum"
+            else:
+                version = None
 
-            #epsilon = 0.031
+            epsilon = 0.031
 
-            #loss_fn = nn.CrossEntropyLoss(reduction="sum")
+            loss_fn = nn.CrossEntropyLoss(reduction="sum")
 
-            #norm = np.inf
+            norm = np.inf
             #norm = 2
 
-            #outputs, loss = locally_linearity_regularization(
-                #model, loss_fn, data, target, norm=norm, optimizer=optimizer,
-                #step_size=epsilon/2, epsilon=epsilon, perturb_steps=2,
-                #lambd=lambd, mu=mu, version=version
-            #)
-
-            loss = locally_linearity_regularization(
-                model, data, target, epsilon=0.031, alpha=0.007, num_steps=10, lambda=4.0, mu=3.0, smoothing_factor=2.0
+            outputs, loss = locally_linearity_regularization(
+                model, loss_fn, data, target, norm=norm, optimizer=optimizer,
+                step_size=epsilon/2, epsilon=epsilon, perturb_steps=2,
+                lambd=lambd, mu=mu, version=version
             )
+
+       elif 'tulip' in args.loss:
+            if 'tulipem1' in args.loss:
+                lambd = 1e-1
+            elif 'tulipem2' in args.loss:
+                lambd = 1e-2
+            elif 'tulip0' in args.loss:
+                lambd = 0
+            else:
+                lambd = 1
+
+            if 'ssem1' in args.loss:
+                step_size = 1e-1
+            elif 'ssem2' in args.loss:
+                step_size = 1e-2
+            elif 'ssem3' in args.loss:
+                step_size = 1e-3
+            else:
+                step_size = 1e-0
+            
+            outputs, loss = tulip_loss(model, loss_fn, x, y,
+                    step_size=step_size, lambd=lambd)
 
         loss.backward()
         optimizer.step()
