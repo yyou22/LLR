@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torch.optim.lr_scheduler import MultiStepLR
 
-from .optimizer_nadam import Nadam
+from optimizer_nadam import Nadam
 
 class CustomTensorDataset(Dataset):
     """TensorDataset with support of transforms.
