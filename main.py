@@ -16,15 +16,15 @@ import torchvision.models as models
 #from trades import trades_loss
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
-parser.add_argument('--batch-size', type=int, default=64, metavar='N',
+parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--test-batch-size', type=int, default=64, metavar='N',
+parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
                     help='input batch size for testing (default: 128)')
 parser.add_argument('--epochs', type=int, default=20, metavar='N',
                     help='number of epochs to train')
 parser.add_argument('--weight-decay', '--wd', default=2e-4,
                     type=float, metavar='W')
-parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
+parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                     help='learning rate')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum')
@@ -119,15 +119,15 @@ image_datasets = {
 
 dataloaders = {
     TRAIN: torch.utils.data.DataLoader(
-        image_datasets[TRAIN], batch_size=8,
+        image_datasets[TRAIN], batch_size=args.batch_size,
         shuffle=True, num_workers=4
     ),
     VAL: torch.utils.data.DataLoader(
-        image_datasets[VAL], batch_size=8,
+        image_datasets[VAL], batch_size=args.batch_size,
         shuffle=True, num_workers=4
     ),
     TEST: torch.utils.data.DataLoader(
-        image_datasets[TEST], batch_size=8,
+        image_datasets[TEST], batch_size=args.batch_size,
         shuffle=False, num_workers=4  # Set shuffle to False for the test dataset
     )
 }
@@ -221,9 +221,9 @@ def adjust_learning_rate(optimizer, epoch):
 def main():
     # init model, ResNet101() can be also used here for training
     # model = resnet101(weights=ResNet101_Weights.DEFAULT)
-    vgg16 = models.vgg16(pretrained=True)
+    model = models.vgg16(pretrained=True)
     #model.fc = nn.Linear(2048, 43)
-    model.fc = nn.Linear(4096, 4)
+    model.classifier[6] = nn.Linear(4096, 4)
     model = model.to(device)
 
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
