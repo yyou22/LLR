@@ -75,6 +75,11 @@ def locally_linearity_regularization(model,
     if version == "sum":
         loss = loss_natural + lambd * g(x, delta, mg) + mu * grad_dot(x, delta, mg) * len(x)
     else:
-        loss = loss_natural + lambd * g(x, delta, mg) + mu * grad_dot(x, delta, mg)
+        g_ = g(x, delta, mg)
+        grad_ = grad_dot(x, delta, mg)
+        loss = loss_natural + lambd * g_ + mu * grad_
+
+    print('g(x, delta, mg)', g_)
+    print('grad_dot(x, delta, mg)', grad_)
 
     return outputs, loss
