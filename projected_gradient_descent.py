@@ -6,8 +6,8 @@ import torch
 import torch.utils.data as data_utils
 from tqdm import tqdm
 
-from .fast_gradient_method import fast_gradient_method
-from ..base import AttackModel
+from fast_gradient_method import fast_gradient_method
+from base import AttackModel
 
 
 def clip_eta(eta, norm, eps):

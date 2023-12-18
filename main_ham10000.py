@@ -182,8 +182,8 @@ def train(args, model, device, train_loader, optimizer, epoch):
                 beta = 1.
 
             outputs = model(advx)
-            adv_loss = loss_fn(outputs, y)
-            loss = loss_fn(model(x), y) + beta * adv_loss
+            adv_loss = loss_fn(outputs, target)
+            loss = loss_fn(model(data), target) + beta * adv_loss
 
         loss.backward()
         optimizer.step()
