@@ -80,5 +80,8 @@ def fast_gradient_method(model_fn, x, eps, norm, loss_fn=None,
     adv_x = torch.clamp(adv_x, clip_min, clip_max)
 
   if sanity_checks:
+    for i in range(len(asserts)):
+      if isinstance(asserts[i], torch.Tensor):
+          asserts[i] = asserts[i].cpu()
     assert np.all(asserts)
   return adv_x
