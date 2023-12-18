@@ -10,14 +10,16 @@ from torchvision import datasets, transforms
 import torchvision.models as models
 #from torchvision.models import resnet101, ResNet101_Weights
 import numpy as np
+import pandas as pd
 
 from HAM_preprocess import HAM10000
+from projected_gradient_descent import projected_gradient_descent
 
 from llr import locally_linearity_regularization
 from tulip import tulip_loss
 from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
 
-#used batch=128 lr=0.001 for standard
+#used batch=64 lr=0.00001 for llr
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                     help='input batch size for training (default: 128)')
@@ -45,11 +47,11 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=50, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--model-dir', default='./model-OCT-VGG',
+parser.add_argument('--model-dir', default='./model-HAM-VGG',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--loss', default='tulip',
+parser.add_argument('--loss', default='advbeta',
                     help='[standard | llr | tulip]')
 
 args = parser.parse_args()
@@ -63,32 +65,10 @@ torch.manual_seed(args.seed)
 device = torch.device("cuda" if use_cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
-#data_dir = '/content/data/OCT2017 '
-#TRAIN = 'train'
-#VAL = 'val'
-#TEST = 'test'
+data_dir = '/content/data/HAM10000/'
+df_train = pd.read_csv(data_dir + 'train_data.csv')
+df_val = pd.read_csv(data_dir + 'val_data.csv')
 
-# VGG-16 Takes 224x224 images as input, so we resize all of them
-#data_transforms = {
-    #TRAIN: transforms.Compose([
-        # Data augmentation is a good practice for the train set
-        # Here, we randomly crop the image to 224x224 and
-        # randomly flip it horizontally. 
-        #transforms.RandomResizedCrop(224),
-        #transforms.RandomHorizontalFlip(),
-        #transforms.ToTensor(),
-    #]),
-    #VAL: transforms.Compose([
-        #transforms.Resize(256),
-        #transforms.CenterCrop(224),
-        #transforms.ToTensor(),
-    #]),
-    #TEST: transforms.Compose([
-        #transforms.Resize(256),
-        #transforms.CenterCrop(224),
-        #transforms.ToTensor(),
-    #])
-#}
 
 input_size = 224
 
@@ -103,43 +83,12 @@ train_transform = transforms.Compose([transforms.Resize((input_size,input_size))
 val_transform = transforms.Compose([transforms.Resize((input_size,input_size)), transforms.ToTensor(),
                                     transforms.Normalize(norm_mean, norm_std)])
 
-#image_datasets = {
-    #x: datasets.ImageFolder(
-        #os.path.join(data_dir, x), 
-        #transform=data_transforms[x]
-    #)
-    #for x in [TRAIN, VAL, TEST]
-#}
-
-#dataloaders = {
-    #TRAIN: torch.utils.data.DataLoader(
-        #image_datasets[TRAIN], batch_size=args.batch_size,
-        #shuffle=True, num_workers=4
-    #),
-    #VAL: torch.utils.data.DataLoader(
-        #image_datasets[VAL], batch_size=args.batch_size,
-        #shuffle=True, num_workers=4
-    #),
-    #TEST: torch.utils.data.DataLoader(
-        #image_datasets[TEST], batch_size=args.batch_size,
-        #shuffle=False, num_workers=4  # Set shuffle to False for the test dataset
-    #)
-#}
-
-#dataset_sizes = {x: len(image_datasets[x]) for x in [TRAIN, VAL, TEST]}
-
-#for x in [TRAIN, VAL, TEST]:
-    #print("Loaded {} images under {}".format(dataset_sizes[x], x))
-
-#train_loader = dataloaders[TRAIN]
-#test_loader = dataloaders[TEST]
-
 # Define the training set using the table train_df and using our defined transitions (train_transform)
 training_set = HAM10000(df_train, transform=train_transform)
-train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=4)
+train_loader = torch.utils.data.DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=4)
 # Same for the validation set:
 test_set = HAM10000(df_val, transform=val_transform)
-test_loader = DataLoader(validation_set, batch_size=args.batch_size, shuffle=False, num_workers=4)
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
 def train(args, model, device, train_loader, optimizer, epoch):
 
@@ -150,14 +99,20 @@ def train(args, model, device, train_loader, optimizer, epoch):
 
         # calculate robust loss
         if args.loss == "standard":
-            loss = F.cross_entropy(model(data), target)
+
+            loss_fn = nn.CrossEntropyLoss(reduction="sum")
+
+            loss = loss_fn(model(data), target)
+
+
         elif 'llr' in args.loss:
             if 'llr65' in args.loss:
                 lambd, mu = 6.0, 5.0
             elif 'llr36' in args.loss:
                 lambd, mu = 3.0, 6.0
             else:
-                lambd, mu = 4.0, 3.0
+                #lambd, mu = 4.0, 3.0
+                lambd, mu = 3.0, 6.0
 
             if 'sllr' in args.loss:
                 version = "sum"
@@ -201,6 +156,34 @@ def train(args, model, device, train_loader, optimizer, epoch):
             
             outputs, loss = tulip_loss(model, loss_fn, data, target,
                     step_size=step_size, lambd=lambd)
+
+        elif 'advbeta' in args.loss:
+
+            epsilon = 0.031
+
+            norm = np.inf
+
+            loss_fn = nn.CrossEntropyLoss(reduction="sum")
+
+            advx = projected_gradient_descent(model, data, y=target,
+                    clip_min=0, clip_max=1,
+                    eps_iter=epsilon/5,
+                    eps=epsilon, norm=norm, nb_iter=10)
+
+            if 'beta.5' in args.loss:
+                beta = 0.5
+            elif 'beta8' in args.loss:
+                beta = 8.
+            elif 'beta4' in args.loss:
+                beta = 4.
+            elif 'beta2' in args.loss:
+                beta = 2.
+            else:
+                beta = 1.
+
+            outputs = model(advx)
+            adv_loss = loss_fn(outputs, y)
+            loss = loss_fn(model(x), y) + beta * adv_loss
 
         loss.backward()
         optimizer.step()
@@ -269,7 +252,7 @@ def main():
     model = models.vgg16(pretrained=True)
     #model = models.vgg16()
     #model.fc = nn.Linear(2048, 43)
-    model.classifier[6] = nn.Linear(4096, 4)
+    model.classifier[6] = nn.Linear(4096, 7)
     model = model.to(device)
 
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
