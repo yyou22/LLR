@@ -18,6 +18,7 @@ from projected_gradient_descent import projected_gradient_descent
 from llr import locally_linearity_regularization
 from tulip import tulip_loss
 from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
+from rst import rst_loss
 
 #used batch=64 lr=0.00001 for llr
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
@@ -159,16 +160,16 @@ def train(args, model, device, train_loader, optimizer, epoch):
 
         elif 'advbeta' in args.loss:
 
-            epsilon = 0.031
+            #epsilon = 0.031
 
-            norm = np.inf
+            #norm = np.inf
 
-            loss_fn = nn.CrossEntropyLoss(reduction="sum")
+            #loss_fn = nn.CrossEntropyLoss(reduction="sum")
 
-            advx = projected_gradient_descent(model, data, y=target,
-                    clip_min=0, clip_max=1,
-                    eps_iter=epsilon/5,
-                    eps=epsilon, norm=norm, nb_iter=10)
+            #advx = projected_gradient_descent(model, data, y=target,
+                    #clip_min=0, clip_max=1,
+                    #eps_iter=epsilon/5,
+                    #eps=epsilon, norm=norm, nb_iter=10)
 
             if 'beta.5' in args.loss:
                 beta = 0.5
@@ -181,9 +182,18 @@ def train(args, model, device, train_loader, optimizer, epoch):
             else:
                 beta = 1.
 
-            outputs = model(advx)
-            adv_loss = loss_fn(outputs, target)
-            loss = loss_fn(model(data), target) + beta * adv_loss
+            #outputs = model(advx)
+            #adv_loss = loss_fn(outputs, target)
+            #loss = loss_fn(model(data), target) + beta * adv_loss
+
+            loss = rst_loss(model=model,
+                           x_natural=data,
+                           y=target,
+                           optimizer=optimizer,
+                           step_size=args.step_size,
+                           epsilon=args.epsilon,
+                           perturb_steps=args.num_steps,
+                           beta=beta)
 
         loss.backward()
         optimizer.step()

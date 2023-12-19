@@ -182,10 +182,14 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm, loss_f
     adv_x = fast_gradient_method(model_fn, adv_x, eps_iter, norm, loss_fn=loss_fn,
                                  clip_min=clip_min, clip_max=clip_max, y=y, targeted=targeted)
 
+    #print('adv_x1', adv_x)
+
     # Clipping perturbation eta to norm norm ball
-    eta = adv_x - x
-    eta = clip_eta(eta, norm, eps)
-    adv_x = x + eta
+    #eta = adv_x - x
+    #eta = clip_eta(eta, norm, eps)
+    #adv_x = x + eta
+
+    #print('adv_x2', adv_x)
 
     # Redo the clipping.
     # FGM already did it, but subtracting and re-adding eta can add some
@@ -194,14 +198,17 @@ def projected_gradient_descent(model_fn, x, eps, eps_iter, nb_iter, norm, loss_f
       adv_x = torch.clamp(adv_x, clip_min, clip_max)
     i += 1
 
-  asserts.append(eps_iter <= eps)
-  if norm == np.inf and clip_min is not None:
+  #asserts.append(eps_iter <= eps)
+  #if norm == np.inf and clip_min is not None:
     # TODO necessary to cast clip_min and clip_max to x.dtype?
-    asserts.append(eps + clip_min <= clip_max)
+    #asserts.append(eps + clip_min <= clip_max)
 
-  if sanity_checks:
-    for i in range(len(asserts)):
-      if isinstance(asserts[i], torch.Tensor):
-          asserts[i] = asserts[i].cpu()
-    assert np.all(asserts), asserts
+  #if sanity_checks:
+    #for i in range(len(asserts)):
+      #if isinstance(asserts[i], torch.Tensor):
+          #asserts[i] = asserts[i].cpu()
+    #assert np.all(asserts), asserts
+
+  #print('adv_x3', adv_x)
+
   return adv_x

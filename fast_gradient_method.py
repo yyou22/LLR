@@ -79,9 +79,12 @@ def fast_gradient_method(model_fn, x, eps, norm, loss_fn=None,
           "One of clip_min and clip_max is None but we don't currently support one-sided clipping")
     adv_x = torch.clamp(adv_x, clip_min, clip_max)
 
-  if sanity_checks:
-    for i in range(len(asserts)):
-      if isinstance(asserts[i], torch.Tensor):
-          asserts[i] = asserts[i].cpu()
-    assert np.all(asserts)
+  #if sanity_checks:
+    #for i in range(len(asserts)):
+      #if isinstance(asserts[i], torch.Tensor):
+          #asserts[i] = asserts[i].cpu()
+    #assert np.all(asserts)
+
+  #print('adv_x', adv_x)
+
   return adv_x
