@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from HAM_preprocess import HAM10000
-from projected_gradient_descent import projected_gradient_descent
+#from projected_gradient_descent import projected_gradient_descent
 
 from llr import locally_linearity_regularization
 from tulip import tulip_loss

@@ -14,6 +14,7 @@ import numpy as np
 from llr import locally_linearity_regularization
 from tulip import tulip_loss
 from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
+from rst import rst_loss
 
 #used batch=128 lr=0.001 for standard
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
@@ -47,7 +48,7 @@ parser.add_argument('--model-dir', default='./model-OCT-VGG',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--loss', default='tulip',
+parser.add_argument('--loss', default='advbeta',
                     help='[standard | llr | tulip]')
 
 args = parser.parse_args()
@@ -180,6 +181,28 @@ def train(args, model, device, train_loader, optimizer, epoch):
             
             outputs, loss = tulip_loss(model, loss_fn, data, target,
                     step_size=step_size, lambd=lambd)
+
+        elif 'advbeta' in args.loss:
+
+            if 'beta.5' in args.loss:
+                beta = 0.5
+            elif 'beta8' in args.loss:
+                beta = 8.
+            elif 'beta4' in args.loss:
+                beta = 4.
+            elif 'beta2' in args.loss:
+                beta = 2.
+            else:
+                beta = 1.
+
+            loss = rst_loss(model=model,
+                           x_natural=data,
+                           y=target,
+                           optimizer=optimizer,
+                           step_size=args.step_size,
+                           epsilon=args.epsilon,
+                           perturb_steps=args.num_steps,
+                           beta=beta)
 
         loss.backward()
         optimizer.step()

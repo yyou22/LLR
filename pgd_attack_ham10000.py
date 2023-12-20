@@ -50,75 +50,30 @@ use_cuda = not args.no_cuda and torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
-# set up data loader
-#transform_test = transforms.Compose([
-  #transforms.Resize((96, 96)),
-  #transforms.ToTensor(),
-#])
+data_dir = '/content/data/HAM10000/'
+df_train = pd.read_csv(data_dir + 'train_data.csv')
+df_val = pd.read_csv(data_dir + 'val_data.csv')
 
-#testset = GTSRB_Test(
-    #root_dir='/content/data/GTSRB-Test/Final_Test/Images/',
-    #transform=transform_test
-#)
-#test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
-data_dir = '/content/data/OCT2017 '
-TRAIN = 'train'
-VAL = 'val'
-TEST = 'test'
+input_size = 224
 
-# VGG-16 Takes 224x224 images as input, so we resize all of them
-data_transforms = {
-    TRAIN: transforms.Compose([
-        # Data augmentation is a good practice for the train set
-        # Here, we randomly crop the image to 224x224 and
-        # randomly flip it horizontally. 
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-    ]),
-    VAL: transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-    ]),
-    TEST: transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-    ])
-}
+norm_mean = [0.7630392, 0.5456477, 0.57004845]
+norm_std = [0.1409286, 0.15261266, 0.16997074]
+# define the transformation of the train images.
+train_transform = transforms.Compose([transforms.Resize((input_size,input_size)),transforms.RandomHorizontalFlip(),
+                                      transforms.RandomVerticalFlip(),transforms.RandomRotation(20),
+                                      transforms.ColorJitter(brightness=0.1, contrast=0.1, hue=0.1),
+                                        transforms.ToTensor(), transforms.Normalize(norm_mean, norm_std)])
+# define the transformation of the val images.
+val_transform = transforms.Compose([transforms.Resize((input_size,input_size)), transforms.ToTensor(),
+                                    transforms.Normalize(norm_mean, norm_std)])
 
-image_datasets = {
-    x: datasets.ImageFolder(
-        os.path.join(data_dir, x), 
-        transform=data_transforms[x]
-    )
-    for x in [TRAIN, VAL, TEST]
-}
-
-dataloaders = {
-    TRAIN: torch.utils.data.DataLoader(
-        image_datasets[TRAIN], batch_size=args.batch_size,
-        shuffle=True, num_workers=4
-    ),
-    VAL: torch.utils.data.DataLoader(
-        image_datasets[VAL], batch_size=args.batch_size,
-        shuffle=True, num_workers=4
-    ),
-    TEST: torch.utils.data.DataLoader(
-        image_datasets[TEST], batch_size=args.batch_size,
-        shuffle=False, num_workers=4  # Set shuffle to False for the test dataset
-    )
-}
-
-dataset_sizes = {x: len(image_datasets[x]) for x in [TRAIN, VAL, TEST]}
-
-for x in [TRAIN, VAL, TEST]:
-    print("Loaded {} images under {}".format(dataset_sizes[x], x))
-
-train_loader = dataloaders[TRAIN]
-test_loader = dataloaders[TEST]
+# Define the training set using the table train_df and using our defined transitions (train_transform)
+training_set = HAM10000(df_train, transform=train_transform)
+train_loader = torch.utils.data.DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=4)
+# Same for the validation set:
+test_set = HAM10000(df_val, transform=val_transform)
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
 def _pgd_whitebox(model,
                   X,
