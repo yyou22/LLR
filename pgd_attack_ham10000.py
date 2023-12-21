@@ -11,6 +11,11 @@ from torchvision import datasets, transforms
 #from torchvision.models import resnet101, ResNet101_Weights
 import matplotlib.pyplot as plt
 import torchvision.models as models
+import pandas as pd
+import numpy as np
+
+from HAM_preprocess import HAM10000
+from torchvision import transforms as T
 
 #from models.wideresnet import *
 #from models.resnet import *
@@ -32,7 +37,7 @@ parser.add_argument('--random',
                     default=True,
                     help='random initialization for PGD')
 parser.add_argument('--model-path',
-                    default='./model-OCT-VGG(RST)/model-vgg-epoch6.pt',
+                    default='./model-HAM-VGG(RST1)/model-vgg-epoch10.pt',
                     help='model for white-box attack evaluation')
 parser.add_argument('--source-model-path',
                     default='./checkpoints/model_gtsrb_wrn.pt',
@@ -59,6 +64,10 @@ input_size = 224
 
 norm_mean = [0.7630392, 0.5456477, 0.57004845]
 norm_std = [0.1409286, 0.15261266, 0.16997074]
+
+inv_mean = [-0.7630392/0.1409286, -0.5456477/0.15261266, -0.57004845/0.16997074]
+inv_std = [1/0.1409286, 1/0.15261266, 1/0.16997074]
+
 # define the transformation of the train images.
 train_transform = transforms.Compose([transforms.Resize((input_size,input_size)),transforms.RandomHorizontalFlip(),
                                       transforms.RandomVerticalFlip(),transforms.RandomRotation(20),
@@ -75,6 +84,9 @@ train_loader = torch.utils.data.DataLoader(training_set, batch_size=args.batch_s
 test_set = HAM10000(df_val, transform=val_transform)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
+print("Number of training images:", len(training_set))
+print("Number of testing images:", len(test_set))
+
 def _pgd_whitebox(model,
                   X,
                   y,
@@ -82,12 +94,26 @@ def _pgd_whitebox(model,
                   num_steps=args.num_steps,
                   step_size=args.step_size):
     
-    plt.imshow(X.cpu().detach().numpy()[0].transpose(1 , 2 , 0))
-    plt.show()
+    #img = X.cpu().detach().numpy()[0].transpose(1, 2, 0)
+
+    # Undo the normalization
+    #img = (img * norm_std) + norm_mean  # Revert the normalization
+
+    # Clip the values to be between 0 and 1
+    #img = np.clip(img, 0, 1)
+
+    # Display the image
+    #plt.imshow(img)
+    #plt.show()
 
     out = model(X)
     err = (out.data.max(1)[1] != y.data).float().sum()
-    X_pgd = Variable(X.data, requires_grad=True)
+
+    normalize = T.Normalize(norm_mean, norm_std)
+    inv_normalize = T.Normalize(inv_mean, inv_std)
+
+    X_pgd = Variable(inv_normalize(X.data), requires_grad=True)
+
     if args.random:
         random_noise = torch.FloatTensor(*X_pgd.shape).uniform_(-epsilon, epsilon).to(device)
         X_pgd = Variable(X_pgd.data + random_noise, requires_grad=True)
@@ -97,17 +123,35 @@ def _pgd_whitebox(model,
         opt.zero_grad()
 
         with torch.enable_grad():
-            loss = nn.CrossEntropyLoss()(model(X_pgd), y)
+            loss = nn.CrossEntropyLoss()(model(normalize(X_pgd)), y)
         loss.backward()
         eta = step_size * X_pgd.grad.data.sign()
         X_pgd = Variable(X_pgd.data + eta, requires_grad=True)
-        eta = torch.clamp(X_pgd.data - X.data, -epsilon, epsilon)
-        X_pgd = Variable(X.data + eta, requires_grad=True)
-        X_pgd = Variable(torch.clamp(X_pgd, 0, 1.0), requires_grad=True)
-    err_pgd = (model(X_pgd).data.max(1)[1] != y.data).float().sum()
 
-    plt.imshow(X_pgd.cpu().detach().numpy()[0].transpose(1 , 2 , 0))
-    plt.show()
+        eta = torch.clamp(X_pgd.data - inv_normalize(X.data), -epsilon, epsilon)
+        X_pgd = Variable(inv_normalize(X.data) + eta, requires_grad=True)
+        X_pgd = Variable(torch.clamp(X_pgd, 0, 1.0), requires_grad=True)
+
+        #showing image
+        #img = X_pgd.cpu().detach().numpy()[0].transpose(1, 2, 0)
+        # Undo the normalization
+        #img = (img * norm_std) + norm_mean  # Revert the normalization
+        # Clip the values to be between 0 and 1
+        #img = np.clip(img, 0, 1)
+        # Display the image
+        #plt.imshow(img)
+        #plt.show()
+    
+
+    err_pgd = (model(normalize(X_pgd)).data.max(1)[1] != y.data).float().sum()
+
+    #showing image
+    #img = X_pgd.cpu().detach().numpy()[0].transpose(1, 2, 0)
+    # Clip the values to be between 0 and 1
+    #img = np.clip(img, 0, 1)
+    # Display the image
+    #plt.imshow(img)
+    #plt.show()
 
     print('err pgd (white-box): ', err_pgd)
     return err, err_pgd
@@ -192,7 +236,7 @@ def main():
         #model = resnet101()
         #model.fc = nn.Linear(2048, 43)
         model = models.vgg16()
-        model.classifier[6] = nn.Linear(4096, 4)
+        model.classifier[6] = nn.Linear(4096, 7)
 
         model = model.to(device)
         model.load_state_dict(torch.load(args.model_path))
