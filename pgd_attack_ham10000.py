@@ -37,7 +37,7 @@ parser.add_argument('--random',
                     default=True,
                     help='random initialization for PGD')
 parser.add_argument('--model-path',
-                    default='./model-HAM-VGG(RST1)/model-vgg-epoch10.pt',
+                    default='./model-HAM-VGG(RST,beta2)/model-vgg-epoch6.pt',
                     help='model for white-box attack evaluation')
 parser.add_argument('--source-model-path',
                     default='./checkpoints/model_gtsrb_wrn.pt',
@@ -60,7 +60,7 @@ df_train = pd.read_csv(data_dir + 'train_data.csv')
 df_val = pd.read_csv(data_dir + 'val_data.csv')
 
 
-input_size = 224
+input_size = 96
 
 norm_mean = [0.7630392, 0.5456477, 0.57004845]
 norm_std = [0.1409286, 0.15261266, 0.16997074]
@@ -70,8 +70,8 @@ inv_std = [1/0.1409286, 1/0.15261266, 1/0.16997074]
 
 # define the transformation of the train images.
 train_transform = transforms.Compose([transforms.Resize((input_size,input_size)),transforms.RandomHorizontalFlip(),
-                                      transforms.RandomVerticalFlip(),transforms.RandomRotation(20),
-                                      transforms.ColorJitter(brightness=0.1, contrast=0.1, hue=0.1),
+                                      transforms.RandomVerticalFlip(),#transforms.RandomRotation(20),
+                                      #transforms.ColorJitter(brightness=0.1, contrast=0.1, hue=0.1),
                                         transforms.ToTensor(), transforms.Normalize(norm_mean, norm_std)])
 # define the transformation of the val images.
 val_transform = transforms.Compose([transforms.Resize((input_size,input_size)), transforms.ToTensor(),
@@ -146,12 +146,12 @@ def _pgd_whitebox(model,
     err_pgd = (model(normalize(X_pgd)).data.max(1)[1] != y.data).float().sum()
 
     #showing image
-    #img = X_pgd.cpu().detach().numpy()[0].transpose(1, 2, 0)
+    img = X_pgd.cpu().detach().numpy()[0].transpose(1, 2, 0)
     # Clip the values to be between 0 and 1
-    #img = np.clip(img, 0, 1)
+    img = np.clip(img, 0, 1)
     # Display the image
-    #plt.imshow(img)
-    #plt.show()
+    plt.imshow(img)
+    plt.show()
 
     print('err pgd (white-box): ', err_pgd)
     return err, err_pgd

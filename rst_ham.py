@@ -5,6 +5,11 @@ from torch.autograd import Variable
 import torch.optim as optim
 from torchvision import transforms as T
 
+import matplotlib.pyplot as plt
+import torchvision.models as models
+import pandas as pd
+import numpy as np
+
 norm_mean = [0.7630392, 0.5456477, 0.57004845]
 norm_std = [0.1409286, 0.15261266, 0.16997074]
 
@@ -82,15 +87,63 @@ def rst_loss(model,
         x_adv = torch.clamp(x_adv, 0.0, 1.0)
     model.train()
 
+    #print(x_adv.shape)
+
     x_adv = Variable(torch.clamp(x_adv, 0.0, 1.0), requires_grad=False)
+
+    #showing image
+    #img = x_adv.cpu().detach().numpy()[0].transpose(1, 2, 0)
+    # Undo the normalization
+    #img = (img * norm_std) + norm_mean  # Revert the normalization
+    # Clip the values to be between 0 and 1
+    #img = np.clip(img, 0, 1)
+    # Display the image
+    #plt.imshow(img)
+    #plt.savefig('./x_adv.png')
+    #plt.show()
+
+    #img = inv_normalize(x_natural).cpu().detach().numpy()[0].transpose(1, 2, 0)
+    # Undo the normalization
+    #img = (img * norm_std) + norm_mean  # Revert the normalization
+    # Clip the values to be between 0 and 1
+    #img = np.clip(img, 0, 1)
+    # Display the image
+    #plt.imshow(img)
+    #plt.savefig('./x_nat.png')
+    #plt.show()
+
     # zero gradient
     optimizer.zero_grad()
     # calculate robust loss
     logits = model(x_natural)
-    loss_natural = F.cross_entropy(logits, y)
+    loss_natural = F.cross_entropy(logits, y, reduction='sum')
     #loss_robust = (1.0 / batch_size) * criterion_kl(F.log_softmax(model(x_adv), dim=1),
                                                     #F.softmax(model(x_natural), dim=1))
-    loss_robust = F.cross_entropy(model(normalize(x_adv)), y)
+    loss_robust = F.cross_entropy(model(normalize(x_adv)), y, reduction='sum')
     loss = loss_natural + beta * loss_robust
+
+    #showing image
+    #img = normalize(x_adv).cpu().detach().numpy()[0].transpose(1, 2, 0)
+    # Undo the normalization
+    #img = (img * norm_std) + norm_mean  # Revert the normalization
+    # Clip the values to be between 0 and 1
+    #img = np.clip(img, 0, 1)
+    # Display the image
+    #plt.imshow(img)
+    #plt.savefig('./x_adv.png')
+    #plt.show()
+
+    #img = x_natural.cpu().detach().numpy()[0].transpose(1, 2, 0)
+    # Undo the normalization
+    #img = (img * norm_std) + norm_mean  # Revert the normalization
+    # Clip the values to be between 0 and 1
+    #img = np.clip(img, 0, 1)
+    # Display the image
+    #plt.imshow(img)
+    #plt.savefig('./x_nat.png')
+    #plt.show()
+
+    #print('loss_natural', loss_natural)
+    #print('loss_robust', loss_robust)
 
     return loss

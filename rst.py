@@ -4,6 +4,10 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.optim as optim
 
+import matplotlib.pyplot as plt
+import torchvision.models as models
+import pandas as pd
+import numpy as np
 
 def squared_l2_norm(x):
     flattened = x.view(x.unsqueeze(0).shape[0], -1)
@@ -80,4 +84,22 @@ def rst_loss(model,
                                                     #F.softmax(model(x_natural), dim=1))
     loss_robust = F.cross_entropy(model(x_adv), y)
     loss = loss_natural + beta * loss_robust
-    return loss
+
+    #showing image
+    #img = x_adv.cpu().detach().numpy()[0].transpose(1, 2, 0)
+    # Clip the values to be between 0 and 1
+    #img = np.clip(img, 0, 1)
+    # Display the image
+    #plt.imshow(img)
+    #plt.savefig('./x_adv.png')
+    #plt.show()
+
+    #img = x_natural.cpu().detach().numpy()[0].transpose(1, 2, 0)
+    # Clip the values to be between 0 and 1
+    #img = np.clip(img, 0, 1)
+    # Display the image
+    #plt.imshow(img)
+    #plt.savefig('./x_nat.png')
+    #plt.show()
+
+    return loss_robust

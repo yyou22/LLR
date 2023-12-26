@@ -18,7 +18,7 @@ from HAM_preprocess import HAM10000
 from llr import locally_linearity_regularization
 from tulip import tulip_loss
 from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
-from rst import rst_loss
+from rst_ham import rst_loss
 
 #used batch=64 lr=0.00001 for llr
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
@@ -38,9 +38,9 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--epsilon', default=0.031,
                     help='perturbation')
-parser.add_argument('--num-steps', default=10,
+parser.add_argument('--num-steps', default=20,
                     help='perturb number of steps')
-parser.add_argument('--step-size', default=0.007,
+parser.add_argument('--step-size', default=0.003,
                     help='perturb step size')
 parser.add_argument('--beta', default=6.0,
                     help='regularization, i.e., 1/lambda in TRADES')
@@ -52,7 +52,7 @@ parser.add_argument('--model-dir', default='./model-HAM-VGG',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--loss', default='advbeta',
+parser.add_argument('--loss', default='advbeta2',
                     help='[standard | llr | tulip]')
 
 args = parser.parse_args()
@@ -71,14 +71,14 @@ df_train = pd.read_csv(data_dir + 'train_data.csv')
 df_val = pd.read_csv(data_dir + 'val_data.csv')
 
 
-input_size = 224
+input_size = 96
 
 norm_mean = [0.7630392, 0.5456477, 0.57004845]
 norm_std = [0.1409286, 0.15261266, 0.16997074]
 # define the transformation of the train images.
 train_transform = transforms.Compose([transforms.Resize((input_size,input_size)),transforms.RandomHorizontalFlip(),
-                                      transforms.RandomVerticalFlip(),transforms.RandomRotation(20),
-                                      transforms.ColorJitter(brightness=0.1, contrast=0.1, hue=0.1),
+                                      transforms.RandomVerticalFlip(),#transforms.RandomRotation(20),
+                                      #transforms.ColorJitter(brightness=0.1, contrast=0.1, hue=0.1),
                                         transforms.ToTensor(), transforms.Normalize(norm_mean, norm_std)])
 # define the transformation of the val images.
 val_transform = transforms.Compose([transforms.Resize((input_size,input_size)), transforms.ToTensor(),

@@ -32,7 +32,7 @@ parser.add_argument('--random',
                     default=True,
                     help='random initialization for PGD')
 parser.add_argument('--model-path',
-                    default='./model-OCT-VGG(RST)/model-vgg-epoch6.pt',
+                    default='./model-OCT-VGG(AT)/model-vgg-epoch2.pt',
                     help='model for white-box attack evaluation')
 parser.add_argument('--source-model-path',
                     default='./checkpoints/model_gtsrb_wrn.pt',
@@ -154,6 +154,9 @@ def _pgd_whitebox(model,
     plt.imshow(X_pgd.cpu().detach().numpy()[0].transpose(1 , 2 , 0))
     plt.show()
 
+    print(model(X_pgd).data)
+    print(y.data)
+
     print('err pgd (white-box): ', err_pgd)
     return err, err_pgd
 
@@ -185,6 +188,10 @@ def _pgd_blackbox(model_target,
         X_pgd = Variable(torch.clamp(X_pgd, 0, 1.0), requires_grad=True)
 
     err_pgd = (model_target(X_pgd).data.max(1)[1] != y.data).float().sum()
+
+    #print(model_target(X_pgd).data)
+    #print(y.data)
+
     print('err pgd black-box: ', err_pgd)
     return err, err_pgd
 
