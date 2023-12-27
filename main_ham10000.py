@@ -52,8 +52,17 @@ parser.add_argument('--model-dir', default='./model-HAM-VGG',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--loss', default='advbeta2',
+parser.add_argument('--loss', default='advbeta',
                     help='[standard | llr | tulip]')
+# Add a resume argument
+parser.add_argument('--resume', action='store_true', 
+                    help='resume training from the last checkpoint (default: False)')
+parser.add_argument('--model-checkpoint', default='./model-HAM-VGG(RST,beta2)/model-vgg-epoch6.pt',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--optimizer-checkpoint', default='./model-HAM-VGG(RST,beta2)/opt-vgg-checkpoint_epoch6.tar',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--start-epoch', default=7,
+                    help='starting epoch for resuming')
 
 args = parser.parse_args()
 
@@ -265,9 +274,18 @@ def main():
     model.classifier[6] = nn.Linear(4096, 7)
     model = model.to(device)
 
+    start_epoch = 1
+
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    for epoch in range(1, args.epochs + 1):
+    if args.resume:
+        model.load_state_dict(torch.load(os.path.join(args.model_checkpoint)))
+        optimizer.load_state_dict(torch.load(os.path.join(os.path.join(args.optimizer_checkpoint))))
+
+        start_epoch = args.start_epoch
+
+
+    for epoch in range(start_epoch, args.epochs + 1):
         # adjust learning rate for SGD
         adjust_learning_rate(optimizer, epoch)
 
