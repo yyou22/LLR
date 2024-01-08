@@ -31,6 +31,10 @@ parser.add_argument('--stride', type=int, default=7, help='stride for block orde
 parser.add_argument('--targeted', action='store_true', help='perform targeted attack')
 parser.add_argument('--pixel_attack', action='store_true', help='attack in pixel space')
 parser.add_argument('--save_suffix', type=str, default='', help='suffix appended to save file')
+parser.add_argument('--model-checkpoint', default='../checkpoints/standard.pt',
+                    help='directory of model for saving checkpoint')
+
+
 args = parser.parse_args()
 
 if not os.path.exists(args.result_dir):
@@ -52,6 +56,7 @@ df_val = pd.read_csv(data_dir + 'val_data.csv')
 model = models.vgg16(pretrained=True)
 model.classifier[6] = nn.Linear(4096, 7)
 model = model.to(device)
+model.load_state_dict(torch.load(os.path.join(args.model_checkpoint)))
 #checkpoint = torch.load(args.model_ckpt)
 #model.load_state_dict(checkpoint['net'])
 model.eval()
@@ -60,7 +65,7 @@ model.eval()
 image_size = 96
 #testset = dset.CIFAR10(root=args.data_root, train=False, download=True, transform=utils.CIFAR_TRANSFORM)
 
-testset = HAM10000(df_val, transform=val_transform)
+testset = HAM10000(df_val, transform=HAM_TRANSFORM)
 #test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
 #attacker = SimBA(model, 'cifar', image_size)
