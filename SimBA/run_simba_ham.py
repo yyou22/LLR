@@ -76,7 +76,7 @@ model.eval()
 image_size = 96
 #testset = dset.CIFAR10(root=args.data_root, train=False, download=True, transform=utils.CIFAR_TRANSFORM)
 
-testset = HAM10000(df_val, transform=HAM_TRANSFORM)
+testset = HAM10000(df_val, transform=utils.HAM_TRANSFORM)
 #test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
 #attacker = SimBA(model, 'cifar', image_size)
