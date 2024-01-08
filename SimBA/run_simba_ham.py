@@ -33,6 +33,8 @@ parser.add_argument('--pixel_attack', action='store_true', help='attack in pixel
 parser.add_argument('--save_suffix', type=str, default='', help='suffix appended to save file')
 parser.add_argument('--model-checkpoint', default='../checkpoints/standard.pt',
                     help='directory of model for saving checkpoint')
+parser.add_argument('--no-cuda', action='store_true', default=False,
+                    help='disables CUDA training')
 
 
 args = parser.parse_args()
