@@ -33,6 +33,7 @@ MNIST_TRANSFORM = trans.Compose([
 
 HAM_SIZE = 96
 HAM_MEAN = [0.7630392, 0.5456477, 0.57004845]
+HAM_STD = [0.1409286, 0.15261266, 0.16997074]
 HAM_TRANSFORM = trans.Compose([
     trans.Resize((96, 96)),
     trans.ToTensor()])
