@@ -20,7 +20,7 @@ from tulip import tulip_loss
 from utils import get_optimizer, get_loss, get_scheduler, CustomTensorDataset
 from rst_ham import rst_loss
 
-#used batch=64 lr=0.00001 for llr
+#used lr=0.0001 for advbeta below 4
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                     help='input batch size for training (default: 128)')
@@ -30,7 +30,7 @@ parser.add_argument('--epochs', type=int, default=20, metavar='N',
                     help='number of epochs to train')
 parser.add_argument('--weight-decay', '--wd', default=2e-4,
                     type=float, metavar='W')
-parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
+parser.add_argument('--lr', type=float, default=0.00001, metavar='LR',
                     help='learning rate')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum')
@@ -52,7 +52,7 @@ parser.add_argument('--model-dir', default='./model-HAM-VGG',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--loss', default='advbeta',
+parser.add_argument('--loss', default='advbeta.2',
                     help='[standard | llr | tulip]')
 # Add a resume argument
 parser.add_argument('--resume', action='store_true', 
@@ -188,6 +188,8 @@ def train(args, model, device, train_loader, optimizer, epoch):
                 beta = 4.
             elif 'beta2' in args.loss:
                 beta = 2.
+            elif 'beta.2' in args.loss:
+                beta = 0.2
             else:
                 beta = 1.
 
