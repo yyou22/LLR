@@ -10,6 +10,8 @@ import os
 import sys
 #sys.path.append('pytorch-cifar')
 #import models
+import torch.nn as nn
+import torch.nn.functional as F
 from simba import SimBA
 import torchvision.models as models
 
