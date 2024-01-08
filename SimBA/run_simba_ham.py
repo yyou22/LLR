@@ -36,7 +36,7 @@ parser.add_argument('--stride', type=int, default=7, help='stride for block orde
 parser.add_argument('--targeted', action='store_true', help='perform targeted attack')
 parser.add_argument('--pixel_attack', action='store_true', help='attack in pixel space')
 parser.add_argument('--save_suffix', type=str, default='', help='suffix appended to save file')
-parser.add_argument('--model-checkpoint', default='../checkpoints/standard.pt',
+parser.add_argument('--model-checkpoint', default='../../checkpoints/standard.pt',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
