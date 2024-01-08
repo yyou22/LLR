@@ -18,6 +18,8 @@ import torchvision.models as models
 import numpy as np
 import pandas as pd
 
+from HAM_preprocess import HAM10000
+
 parser = argparse.ArgumentParser(description='Runs SimBA on a set of images')
 #parser.add_argument('--data_root', type=str, required=True, help='root directory of imagenet data')
 parser.add_argument('--result_dir', type=str, default='save_ham', help='directory for saving results')
