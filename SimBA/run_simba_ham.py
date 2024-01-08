@@ -35,6 +35,8 @@ parser.add_argument('--model-checkpoint', default='../checkpoints/standard.pt',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
+parser.add_argument('--seed', type=int, default=1, metavar='S',
+                    help='random seed (default: 1)')
 
 
 args = parser.parse_args()
