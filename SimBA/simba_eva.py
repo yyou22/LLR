@@ -16,8 +16,8 @@ import numpy as np
 import pandas as pd
 
 parser = argparse.ArgumentParser(description='Evaluate model accuracy on adversarial images')
-parser.add_argument('--saved_file_path', type=str, default='./save_ham/pixel_vgg_1000_10000_96_0.2000_rand.pth', help='Path to the saved adversarial images')
-parser.add_argument('--image_file_path', type=str, default='./save_ham/images_vgg_1000.pth', help='Path to the sampled images and labels')
+parser.add_argument('--saved_file_path', type=str, default='./save_ham/pixel_vgg_1103_10000_96_0.2000_rand.pth', help='Path to the saved adversarial images')
+parser.add_argument('--image_file_path', type=str, default='./save_ham/images_vgg_1103.pth', help='Path to the sampled images and labels')
 parser.add_argument('--model_checkpoint', type=str, default='../Checkpoints/standard.pt', help='Path to the model checkpoint')
 parser.add_argument('--batch_size', type=int, default=50, help='Batch size for evaluation')
 parser.add_argument('--no_cuda', action='store_true', default=False, help='Disable CUDA')

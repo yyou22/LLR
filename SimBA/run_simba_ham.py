@@ -101,17 +101,12 @@ else:
     #torch.save({'images': images, 'labels': labels}, batchfile)
 
     # Allocate lists to store images and labels
-    images = []
-    labels = []
+    images = torch.zeros(args.num_runs, 3, image_size, image_size)
+    labels = torch.zeros(args.num_runs).long()
 
     # Iterate through the testset and save images and labels
-    for img, label in testset:
-        images.append(img)
-        labels.append(label)
-
-    # Convert lists to tensors
-    images = torch.stack(images)
-    labels = torch.tensor(labels)
+    for i in range(0, args.num_runs):
+        images[i], labels[i] = testset[i]
 
     # Save the images and labels
     torch.save({'images': images, 'labels': labels}, batchfile)
