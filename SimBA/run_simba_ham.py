@@ -26,7 +26,7 @@ parser.add_argument('--result_dir', type=str, default='save_ham', help='director
 parser.add_argument('--sampled_image_dir', type=str, default='save_ham', help='directory to cache sampled images')
 parser.add_argument('--model', type=str, default='vgg', help='type of base model to use')
 #parser.add_argument('--model_ckpt', type=str, required=True, help='model checkpoint location')
-parser.add_argument('--num_runs', type=int, default=1000, help='number of image samples')
+parser.add_argument('--num_runs', type=int, default=1103, help='number of image samples')
 parser.add_argument('--batch_size', type=int, default=50, help='batch size for parallel runs')
 parser.add_argument('--num_iters', type=int, default=10000, help='maximum number of iterations, 0 for unlimited')
 parser.add_argument('--log_every', type=int, default=10, help='log every n iterations')
@@ -90,14 +90,30 @@ if os.path.isfile(batchfile):
     images = checkpoint['images']
     labels = checkpoint['labels']
 else:
-    images = torch.zeros(args.num_runs, 3, image_size, image_size)
-    labels = torch.zeros(args.num_runs).long()
-    preds = labels + 1
-    while preds.ne(labels).sum() > 0:
-        idx = torch.arange(0, images.size(0)).long()[preds.ne(labels)]
-        for i in list(idx):
-            images[i], labels[i] = testset[random.randint(0, len(testset) - 1)]
-        preds[idx], _ = utils.get_preds(model, images[idx], 'cifar', batch_size=args.batch_size)
+    #images = torch.zeros(args.num_runs, 3, image_size, image_size)
+    #labels = torch.zeros(args.num_runs).long()
+    #preds = labels + 1
+    #while preds.ne(labels).sum() > 0:
+        #idx = torch.arange(0, images.size(0)).long()[preds.ne(labels)]
+        #for i in list(idx):
+            #images[i], labels[i] = testset[random.randint(0, len(testset) - 1)]
+        #preds[idx], _ = utils.get_preds(model, images[idx], 'cifar', batch_size=args.batch_size)
+    #torch.save({'images': images, 'labels': labels}, batchfile)
+
+    # Allocate lists to store images and labels
+    images = []
+    labels = []
+
+    # Iterate through the testset and save images and labels
+    for img, label in testset:
+        images.append(img)
+        labels.append(label)
+
+    # Convert lists to tensors
+    images = torch.stack(images)
+    labels = torch.tensor(labels)
+
+    # Save the images and labels
     torch.save({'images': images, 'labels': labels}, batchfile)
 
 if args.order == 'rand':

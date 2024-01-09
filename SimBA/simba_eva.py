@@ -16,7 +16,8 @@ import numpy as np
 import pandas as pd
 
 parser = argparse.ArgumentParser(description='Evaluate model accuracy on adversarial images')
-parser.add_argument('--saved_file_path', type=str, default='./save_ham/pixel_vgg_1000_10000_32_0.2000_rand.pth', help='Path to the saved adversarial images and labels')
+parser.add_argument('--saved_file_path', type=str, default='./save_ham/pixel_vgg_1000_10000_96_0.2000_rand.pth', help='Path to the saved adversarial images')
+parser.add_argument('--image_file_path', type=str, default='./save_ham/images_vgg_1000.pth', help='Path to the sampled images and labels')
 parser.add_argument('--model_checkpoint', type=str, default='../Checkpoints/standard.pt', help='Path to the model checkpoint')
 parser.add_argument('--batch_size', type=int, default=50, help='Batch size for evaluation')
 parser.add_argument('--no_cuda', action='store_true', default=False, help='Disable CUDA')
@@ -52,8 +53,22 @@ def main():
 
     # Load the saved data
     saved_data = torch.load(args.saved_file_path, map_location=device)
+
+    saved_image = torch.load(args.image_file_path, map_location=device)
+
     adv_images = saved_data['adv']  # Adversarial images
-    #true_labels = saved_data['labels']  # True labels
+    true_labels = saved_image['labels']  # True labels
+
+    print(true_labels)
+
+    labels_numpy = true_labels.cpu().detach().numpy()
+
+    # Use numpy's unique function to count occurrences
+    unique, counts = np.unique(labels_numpy, return_counts=True)
+
+    # Print the counts for each unique value
+    for label, count in zip(unique, counts):
+        print(f"Label {label}: {count} occurrences")
 
     succs = saved_data['succs']
     #print(succs)
