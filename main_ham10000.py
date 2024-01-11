@@ -52,7 +52,7 @@ parser.add_argument('--model-dir', default='./model-HAM-VGG',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--loss', default='advbeta.2',
+parser.add_argument('--loss', default='standard',
                     help='[standard | llr | tulip]')
 # Add a resume argument
 parser.add_argument('--resume', action='store_true', 

@@ -37,7 +37,7 @@ parser.add_argument('--random',
                     default=True,
                     help='random initialization for PGD')
 parser.add_argument('--model-path',
-                    default='./model-HAM-VGG(RST,beta1)/model-vgg-epoch20.pt',
+                    default='./model-HAM-VGG(standard-88)/model-vgg-epoch13.pt',
                     help='model for white-box attack evaluation')
 parser.add_argument('--source-model-path',
                     default='./checkpoints/model_gtsrb_wrn.pt',

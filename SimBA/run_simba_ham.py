@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from HAM_preprocess import HAM10000
+import torchvision.transforms as trans
 
 parser = argparse.ArgumentParser(description='Runs SimBA on a set of images')
 #parser.add_argument('--data_root', type=str, required=True, help='root directory of imagenet data')
@@ -28,7 +29,7 @@ parser.add_argument('--model', type=str, default='vgg', help='type of base model
 #parser.add_argument('--model_ckpt', type=str, required=True, help='model checkpoint location')
 parser.add_argument('--num_runs', type=int, default=1103, help='number of image samples')
 parser.add_argument('--batch_size', type=int, default=50, help='batch size for parallel runs')
-parser.add_argument('--num_iters', type=int, default=10000, help='maximum number of iterations, 0 for unlimited')
+parser.add_argument('--num_iters', type=int, default=5000, help='maximum number of iterations, 0 for unlimited')
 parser.add_argument('--log_every', type=int, default=10, help='log every n iterations')
 parser.add_argument('--epsilon', type=float, default=0.2, help='step size per iteration')
 parser.add_argument('--linf_bound', type=float, default=0.0, help='L_inf bound for frequency space attack')
@@ -38,7 +39,7 @@ parser.add_argument('--stride', type=int, default=7, help='stride for block orde
 parser.add_argument('--targeted', action='store_true', help='perform targeted attack')
 parser.add_argument('--pixel_attack', action='store_true', help='attack in pixel space')
 parser.add_argument('--save_suffix', type=str, default='', help='suffix appended to save file')
-parser.add_argument('--model-checkpoint', default='../Checkpoints/standard.pt',
+parser.add_argument('--model-checkpoint', default='../Checkpoints/beta.5.pt',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
@@ -76,7 +77,9 @@ model.eval()
 image_size = 96
 #testset = dset.CIFAR10(root=args.data_root, train=False, download=True, transform=utils.CIFAR_TRANSFORM)
 
-testset = HAM10000(df_val, transform=utils.HAM_TRANSFORM)
+testset = HAM10000(df_val, transform=trans.Compose([
+    trans.Resize((96, 96)),
+    trans.ToTensor()]))
 #test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
 #attacker = SimBA(model, 'cifar', image_size)
@@ -84,7 +87,7 @@ attacker = SimBA(model, 'HAM', image_size)
 
 # load sampled images or sample new ones
 # this is to ensure all attacks are run on the same set of correctly classified images
-batchfile = '%s/images_%s_%d.pth' % (args.sampled_image_dir, args.model, args.num_runs)
+batchfile = '%s/images_%s_%d_96.pth' % (args.sampled_image_dir, args.model, args.num_runs)
 if os.path.isfile(batchfile):
     checkpoint = torch.load(batchfile)
     images = checkpoint['images']
